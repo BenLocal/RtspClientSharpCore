@@ -1,9 +1,14 @@
 ﻿using System;
+using System.Buffers;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
 using System.Text;
 
 namespace RtspClientSharpCore.Rtsp
 {
-    class RtspRequestMessage : RtspMessage
+    public class RtspRequestMessage : RtspMessage
     {
         private readonly Func<uint> _cSeqProvider;
 
@@ -23,7 +28,35 @@ namespace RtspClientSharpCore.Rtsp
             if (!string.IsNullOrEmpty(session))
                 Headers.Add("Session", session);
         }
-        
+
+        public static RtspRequestMessage Parse(ReadOnlySequence<byte> byteSegment)
+        {
+            using var headersStream = new MemoryStream(byteSegment.ToArray(), false);
+            using var headersReader = new StreamReader(headersStream);
+
+            string startLine = headersReader.ReadLine();
+
+            if (startLine == null)
+                throw new RtspParseResponseException("Empty response");
+
+            string[] tokens = GetFirstLineTokens(startLine);
+            RtspMethod rtspMethod = ParseRtspMethod(tokens[0]);
+            Uri uri = ParseUri(tokens[1]);
+            Version protocolVersion = ParseProtocolVersion(tokens[2]);
+
+            NameValueCollection headers = HeadersParser.ParseHeaders(headersReader);
+
+            uint cSeq = 0;
+            string cseqValue = headers.Get("CSEQ");
+
+            if (cseqValue != null)
+                uint.TryParse(cseqValue, out cSeq);
+
+            var session = headers.Get("SESSION");
+            return new RtspRequestMessage(rtspMethod, uri, protocolVersion, () => cSeq, null, session);
+        }
+
+
         public void UpdateSequenceNumber()
         {
             CSeq = _cSeqProvider();
@@ -45,6 +78,44 @@ namespace RtspClientSharpCore.Rtsp
             queryBuilder.Append("\r\n");
 
             return queryBuilder.ToString();
+        }
+
+        private static Uri ParseUri(string url)
+        {
+            return new Uri(url);
+        }
+
+        private static string[] GetFirstLineTokens(string startLine)
+        {
+            string[] tokens = startLine.Split(' ');
+
+            if (tokens.Length == 0)
+                throw new RtspParseResponseException("Missing method");
+            if (tokens.Length == 1)
+                throw new RtspParseResponseException("Missing URI");
+            if (tokens.Length == 2)
+                throw new RtspParseResponseException("Missing protocol version");
+
+            return tokens;
+        }
+
+        private static Version ParseProtocolVersion(string protocolNameVersion)
+        {
+            int slashPos = protocolNameVersion.IndexOf('/');
+
+            if (slashPos == -1)
+                throw new RtspParseResponseException($"Invalid protocol name/version format: {protocolNameVersion}");
+
+            string version = protocolNameVersion.Substring(slashPos + 1);
+            if (!Version.TryParse(version, out Version protocolVersion))
+                throw new RtspParseResponseException($"Invalid RTSP protocol version: {version}");
+
+            return protocolVersion;
+        }
+
+        private static RtspMethod ParseRtspMethod(string method)
+        {
+            return (RtspMethod)Enum.Parse(typeof(RtspMethod), method.Trim(), true);
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Specialized;
 
 namespace RtspClientSharpCore.Rtsp
 {
-    abstract class RtspMessage
+    public abstract class RtspMessage
     {
         public uint CSeq { get; protected set; }
         public Version ProtocolVersion { get; }

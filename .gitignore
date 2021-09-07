@@ -11,3 +11,5 @@
 /RtspClientSharpCore/TestSnapshotMakerCore/obj/
 /.vs
 /ffmpeghelper_nix/out/build/
+*bin/
+*obj/

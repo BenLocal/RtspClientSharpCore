@@ -3,7 +3,7 @@ using System.IO;
 
 namespace RtspClientSharpCore.Rtsp
 {
-    static class HeadersParser
+    public static class HeadersParser
     {
         public static NameValueCollection ParseHeaders(StreamReader headersReader)
         {

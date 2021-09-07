@@ -1,6 +1,6 @@
 ﻿namespace RtspClientSharpCore.Rtsp
 {
-    enum RtspMethod
+    public enum RtspMethod
     {
         OPTIONS,
         ANNOUNCE,

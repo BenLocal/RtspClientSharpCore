@@ -6,7 +6,7 @@ using System.Text;
 
 namespace RtspClientSharpCore.Rtsp
 {
-    class RtspResponseMessage : RtspMessage
+    public class RtspResponseMessage : RtspMessage
     {
         private static readonly ArraySegment<byte> EmptySegment = new ArraySegment<byte>(Array.Empty<byte>(), 0, 0);
 
