@@ -6,13 +6,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using RtspServerSharpCore.Networking;
+using System.Collections.Concurrent;
 
 namespace RtspServerSharpCore
 {
     public class RtspServer
     {
         private readonly Socket _listener;
-        private ManualResetEvent _allDone = new ManualResetEvent(false);
+        private readonly ManualResetEvent _allDone = new ManualResetEvent(false);
+       
 
         public bool Started { get; private set; } = false;
 
@@ -83,6 +85,7 @@ namespace RtspServerSharpCore
             try
             {
                 pipe = new IOPipeLine(client);
+                RtspManager.Current.TryAddSession(pipe.CurrentSession);
                 await pipe.StartAsync(ct);
             }
             catch (TimeoutException)
@@ -97,6 +100,7 @@ namespace RtspServerSharpCore
             }
             finally
             {
+                RtspManager.Current.TryRemoveSession(pipe?.CurrentSession);
                 pipe?.Dispose();
             }
         }

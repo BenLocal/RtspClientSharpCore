@@ -16,11 +16,11 @@ namespace RtspServerSharpCore.Networking
     class IOPipeLine : IDisposable
     {
         private SemaphoreSlim _writerSignal = new SemaphoreSlim(0);
-
-        private Socket _socket;
         private ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
+
+        private readonly Socket _socket;
         private readonly int _resumeWriterThreshole;
-        private ConcurrentQueue<WriteState> _writerQueue = new ConcurrentQueue<WriteState>();
+        private readonly ConcurrentQueue<WriteState> _writerQueue;
 
         private readonly RtspStreamContext _rtspStreamContext;
 
@@ -28,6 +28,7 @@ namespace RtspServerSharpCore.Networking
         {
             _socket = socket;
             _resumeWriterThreshole = resumeWriterThreshole;
+            _writerQueue = new ConcurrentQueue<WriteState>();
 
             _rtspStreamContext = new RtspStreamContext(this);
         }
@@ -78,6 +79,9 @@ namespace RtspServerSharpCore.Networking
             t3.ContinueWith(setResult, TaskContinuationOptions.OnlyOnRanToCompletion);
             return tcs.Task;
         }
+
+        public RtspClientSession CurrentSession
+            => _rtspStreamContext._clientSession;
 
         #region Sender
 
@@ -165,8 +169,6 @@ namespace RtspServerSharpCore.Networking
             Dispose();
         }
         #endregion
-
-
 
         #region IDisposable Support
         private bool disposedValue = false;

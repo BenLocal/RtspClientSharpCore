@@ -11,160 +11,160 @@ using RtspClientSharpCore.RawFrames;
 
 namespace TestRtspClient
 {
-  class Program
-  {
-    // TODO: Change to your values
-    private const string urlToCamera = "rtsp://192.168.0.90:554/onvif1";
-//    private const string urlToCamera = "rtsp://MirrorBoy:123454321@192.168.0.189/h264Preview_01_main";
-    private const string pathToSaveImage = @"D:\Downloads\";
-    private const int streamWidth = 2560;//240;
-    private const int streamHeight = 1440;//160;
-
-    //public static event EventHandler<IDecodedVideoFrame> FrameReceived;
-    private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-    private static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-    private static int _imageNumber = 1;
-    private static readonly FrameDecoder FrameDecoder = new FrameDecoder();
-    private static readonly FrameTransformer FrameTransformer = new FrameTransformer(streamWidth, streamHeight);
-
-
-    static void Main()
+    class Program
     {
-      Console.WriteLine($"Platform {RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture}");
+        // TODO: Change to your values
+        private const string urlToCamera = "rtsp://192.168.0.90:554/onvif1";
+        //    private const string urlToCamera = "rtsp://MirrorBoy:123454321@192.168.0.189/h264Preview_01_main";
+        private const string pathToSaveImage = @"D:\Downloads\";
+        private const int streamWidth = 2560;//240;
+        private const int streamHeight = 1440;//160;
 
-      var serverUri = new Uri(urlToCamera);
-      //var credentials = new NetworkCredential("admin", "admin12345678");
+        //public static event EventHandler<IDecodedVideoFrame> FrameReceived;
+        private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        private static int _imageNumber = 1;
+        private static readonly FrameDecoder FrameDecoder = new FrameDecoder();
+        private static readonly FrameTransformer FrameTransformer = new FrameTransformer(streamWidth, streamHeight);
 
-      var connectionParameters = new ConnectionParameters(serverUri/*, credentials*/);
 
-      SaveManyPicture(connectionParameters);
-      //SaveOnePicture(connectionParameters).Wait();
-    }
-
-    private static async Task SaveOnePicture(ConnectionParameters connectionParameters)
-    {
-      Bitmap bitmap = null;
-      try
-      {
-        var cancellationTokenSource = new CancellationTokenSource();
-
-        using var rtspClient = new RtspClient(connectionParameters);
-        rtspClient.FrameReceived += delegate (object o, RawFrame rawFrame)
+        static void Main()
         {
-          if (!(rawFrame is RtspClientSharpCore.RawFrames.Video.RawVideoFrame rawVideoFrame))
-            return;
+            Console.WriteLine($"Platform {RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture}");
 
-          var decodedFrame = FrameDecoder.TryDecode(rawVideoFrame);
+            var serverUri = new Uri(urlToCamera);
+            //var credentials = new NetworkCredential("admin", "admin12345678");
 
-          if (decodedFrame == null) return;
+            var connectionParameters = new ConnectionParameters(serverUri/*, credentials*/);
 
-          bitmap = FrameTransformer.TransformToBitmap(decodedFrame);
-          cancellationTokenSource.Cancel();
-        };
+            SaveManyPicture(connectionParameters);
+            //SaveOnePicture(connectionParameters).Wait();
+        }
 
-        Console.WriteLine("Connecting...");
-        await rtspClient.ConnectAsync(cancellationTokenSource.Token);
-        Console.WriteLine("Connected.");
-        await rtspClient.ReceiveAsync(cancellationTokenSource.Token);
-
-      }
-      catch (OperationCanceledException)
-      {
-      }
-      Console.WriteLine("Saving...");
-      bitmap?.Save(Path.Combine(pathToSaveImage, "image.jpg"), ImageFormat.Jpeg);
-    }
-
-    private static void SaveManyPicture(ConnectionParameters connectionParameters)
-    {
-      var cancellationTokenSource = new CancellationTokenSource();
-
-      var connectTask = ConnectAsync(connectionParameters, cancellationTokenSource.Token);
-
-      Console.WriteLine("Press any key to cancel");
-      Console.ReadLine();
-
-      cancellationTokenSource.Cancel();
-
-      Console.WriteLine("Canceling");
-      connectTask.Wait(CancellationToken.None);
-    }
-
-    private static async Task ConnectAsync(ConnectionParameters connectionParameters, CancellationToken token)
-    {
-      try
-      {
-        var delay = TimeSpan.FromSeconds(5);
-
-        using (var rtspClient = new RtspClient(connectionParameters))
+        private static async Task SaveOnePicture(ConnectionParameters connectionParameters)
         {
-          rtspClient.FrameReceived += RtspClient_FrameReceived;
-
-          while (true)
-          {
+            Bitmap bitmap = null;
             try
             {
-              Console.WriteLine("Connecting...");
-              await rtspClient.ConnectAsync(token);
-              Console.WriteLine("Connected.");
-              await rtspClient.ReceiveAsync(token);
+                var cancellationTokenSource = new CancellationTokenSource();
+
+                using var rtspClient = new RtspClient(connectionParameters);
+                rtspClient.FrameReceived += delegate (object o, RawFrame rawFrame)
+                {
+                    if (!(rawFrame is RtspClientSharpCore.RawFrames.Video.RawVideoFrame rawVideoFrame))
+                        return;
+
+                    var decodedFrame = FrameDecoder.TryDecode(rawVideoFrame);
+
+                    if (decodedFrame == null) return;
+
+                    bitmap = FrameTransformer.TransformToBitmap(decodedFrame);
+                    cancellationTokenSource.Cancel();
+                };
+
+                Console.WriteLine("Connecting...");
+                await rtspClient.ConnectAsync(cancellationTokenSource.Token);
+                Console.WriteLine("Connected.");
+                await rtspClient.ReceiveAsync(cancellationTokenSource.Token);
+
             }
             catch (OperationCanceledException)
             {
-              return;
             }
-            catch (RtspClientSharpCore.Rtsp.RtspClientException e)
+            Console.WriteLine("Saving...");
+            bitmap?.Save(Path.Combine(pathToSaveImage, "image.jpg"), ImageFormat.Jpeg);
+        }
+
+        private static void SaveManyPicture(ConnectionParameters connectionParameters)
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+
+            var connectTask = ConnectAsync(connectionParameters, cancellationTokenSource.Token);
+
+            Console.WriteLine("Press any key to cancel");
+            Console.ReadLine();
+
+            cancellationTokenSource.Cancel();
+
+            Console.WriteLine("Canceling");
+            connectTask.Wait(CancellationToken.None);
+        }
+
+        private static async Task ConnectAsync(ConnectionParameters connectionParameters, CancellationToken token)
+        {
+            try
             {
-              Console.WriteLine(e.ToString());
-              await Task.Delay(delay, token);
+                var delay = TimeSpan.FromSeconds(5);
+
+                using (var rtspClient = new RtspClient(connectionParameters))
+                {
+                    rtspClient.FrameReceived += RtspClient_FrameReceived;
+
+                    while (true)
+                    {
+                        try
+                        {
+                            Console.WriteLine("Connecting...");
+                            await rtspClient.ConnectAsync(token);
+                            Console.WriteLine("Connected.");
+                            await rtspClient.ReceiveAsync(token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            return;
+                        }
+                        catch (RtspClientSharpCore.Rtsp.RtspClientException e)
+                        {
+                            Console.WriteLine(e.ToString());
+                            await Task.Delay(delay, token);
+                        }
+                    }
+                }
             }
-          }
+            catch (OperationCanceledException)
+            {
+            }
         }
-      }
-      catch (OperationCanceledException)
-      {
-      }
-    }
 
-    private static void RtspClient_FrameReceived(object sender, RtspClientSharpCore.RawFrames.RawFrame rawFrame)
-    {
-      if (!(rawFrame is RtspClientSharpCore.RawFrames.Video.RawVideoFrame rawVideoFrame))
-        return;
-
-      var decodedFrame = FrameDecoder.TryDecode(rawVideoFrame);
-
-      if (decodedFrame == null) 
-        return;
-
-      var bitmap = FrameTransformer.TransformToBitmap(decodedFrame);
-
-      var fileName = $"image{_imageNumber++}.jpg";
-
-      var frameType = rawFrame is RtspClientSharpCore.RawFrames.Video.RawH264IFrame ? "IFrame" : "PFrame";
-      Console.WriteLine($"Frame was successfully decoded! {frameType} Trying to save to JPG file {fileName}...");
-
-      try
-      {
-        if (IsWindows)
+        private static void RtspClient_FrameReceived(object sender, RtspClientSharpCore.RawFrames.RawFrame rawFrame)
         {
-          bitmap.Save(Path.Combine(pathToSaveImage, fileName), ImageFormat.Jpeg);
-          return;
-        }
-        if (IsLinux)
-        {
-          // Change to your path
-          bitmap.Save(@"/home/alex/image21.jpg", ImageFormat.Jpeg);
-          return;
-        }
-        throw new PlatformNotSupportedException("Not supported OS platform!!");
-      }
-      catch (Exception e)
-      {
-        Console.WriteLine($"Error saving to file: {e.Message}");
-        Debug.WriteLine($"Error saving to file: {e.Message}");
-        Debug.WriteLine($"Stack trace: {e.StackTrace}");
-      }
-    }
+            if (!(rawFrame is RtspClientSharpCore.RawFrames.Video.RawVideoFrame rawVideoFrame))
+                return;
 
-  }
+            var decodedFrame = FrameDecoder.TryDecode(rawVideoFrame);
+
+            if (decodedFrame == null)
+                return;
+
+            var bitmap = FrameTransformer.TransformToBitmap(decodedFrame);
+
+            var fileName = $"image{_imageNumber++}.jpg";
+
+            var frameType = rawFrame is RtspClientSharpCore.RawFrames.Video.RawH264IFrame ? "IFrame" : "PFrame";
+            Console.WriteLine($"Frame was successfully decoded! {frameType} Trying to save to JPG file {fileName}...");
+
+            try
+            {
+                if (IsWindows)
+                {
+                    bitmap.Save(Path.Combine(pathToSaveImage, fileName), ImageFormat.Jpeg);
+                    return;
+                }
+                if (IsLinux)
+                {
+                    // Change to your path
+                    bitmap.Save(@"/home/alex/image21.jpg", ImageFormat.Jpeg);
+                    return;
+                }
+                throw new PlatformNotSupportedException("Not supported OS platform!!");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error saving to file: {e.Message}");
+                Debug.WriteLine($"Error saving to file: {e.Message}");
+                Debug.WriteLine($"Stack trace: {e.StackTrace}");
+            }
+        }
+
+    }
 }
