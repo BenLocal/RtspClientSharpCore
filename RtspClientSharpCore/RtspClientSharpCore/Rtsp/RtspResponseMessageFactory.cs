@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
@@ -11,7 +12,7 @@ namespace RtspClientSharpCore.Rtsp
     {
         public RtspResponseMessage CreateOptionsResponse(RtspRequestMessage rtspRequest)
         {
-            var headers = new System.Collections.Specialized.NameValueCollection()
+            var headers = new NameValueCollection()
             {
                 { "Public", "OPTIONS,DESCRIBE,ANNOUNCE,SETUP,PLAY,PAUSE,TEARDOWN,GET_PARAMETER,SET_PARAMETER,REDIRECT"}
             };
@@ -21,15 +22,13 @@ namespace RtspClientSharpCore.Rtsp
             return rtspRequestMessage;
         }
 
-        public RtspResponseMessage CreateDescribeResponse(RtspRequestMessage rtspRequest)
+        public RtspResponseMessage CreateDescribeResponse(RtspRequestMessage rtspRequest,
+            NameValueCollection headers, ArraySegment<byte> body)
         {
-            var headers = new System.Collections.Specialized.NameValueCollection()
-            {
-                { "Public", "OPTIONS,DESCRIBE,ANNOUNCE,SETUP,PLAY,PAUSE,TEARDOWN,GET_PARAMETER,SET_PARAMETER,REDIRECT"}
-            };
-
             var rtspRequestMessage = new RtspResponseMessage(RtspStatusCode.Ok, rtspRequest.ProtocolVersion,
                 rtspRequest.CSeq, headers);
+
+            rtspRequestMessage.ResponseBody = body;
             return rtspRequestMessage;
         }
 

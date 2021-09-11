@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using RtspClientSharpCore.RawFrames;
 using RtspClientSharpCore.Rtsp;
+using RtspClientSharpCore.Sdp;
 using RtspClientSharpCore.Utils;
 
 namespace RtspClientSharpCore
@@ -19,6 +21,8 @@ namespace RtspClientSharpCore
         public ConnectionParameters ConnectionParameters { get; }
 
         public event EventHandler<RawFrame> FrameReceived;
+
+        public event EventHandler<IEnumerable<RtspTrackInfo>> RtspTrackReceived;
 
         public RtspClient(ConnectionParameters connectionParameters)
         {
@@ -217,6 +221,10 @@ namespace RtspClientSharpCore
                 {
                     Volatile.Write(ref _anyFrameReceived, true);
                     FrameReceived?.Invoke(this, frame);
+                },
+                RtspTrackReceived = tracks =>
+                {
+                    RtspTrackReceived?.Invoke(this, tracks);
                 }
             };
         }

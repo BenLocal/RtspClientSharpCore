@@ -1,6 +1,6 @@
 ﻿namespace RtspClientSharpCore.Codecs
 {
-    abstract class CodecInfo
+    public abstract class CodecInfo
     {
     }
 }

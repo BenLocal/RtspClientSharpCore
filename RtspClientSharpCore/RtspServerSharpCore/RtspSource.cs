@@ -1,5 +1,6 @@
 ﻿using RtspClientSharpCore;
 using RtspClientSharpCore.RawFrames;
+using RtspClientSharpCore.Sdp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,7 @@ namespace RtspServerSharpCore
 
         public bool IsReady { get; private set; }
 
+        public IEnumerable<RtspTrackInfo> TrackInfos { get; private set; }
 
         private readonly RtspClient _client;
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
@@ -36,25 +38,65 @@ namespace RtspServerSharpCore
             _client = new RtspClient(connectionParameters);
 
             _client.FrameReceived += OnFrameReceived;
+            _client.RtspTrackReceived += OnRtspTrackReceived;
         }
 
+        /// <summary>
+        /// 开始
+        /// </summary>
+        /// <returns></returns>
         public async Task<bool> StartAsync()
         {
-            await _client.ConnectAsync(_cancellationTokenSource.Token);
-            await _client.ReceiveAsync(_cancellationTokenSource.Token);
-            IsReady = true;
-            // TODO
+            try
+            {
+                await _client.ConnectAsync(_cancellationTokenSource.Token);
+                await _client.ReceiveAsync(_cancellationTokenSource.Token);
+                IsReady = true;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+            catch (RtspClientSharpCore.Rtsp.RtspClientException)
+            {
+                IsReady = false;
+                return false;
+            }
+
             return true;
         }
 
-        //public Task<bool> StopAsync()
-        //{
-        //    _client.Dispose();
-        //}
+        /// <summary>
+        /// 重新开始
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> ReStartAsync()
+        {
+            if (IsReady)
+            {
+                return true;
+            }
+
+            return await StartAsync();
+        }
+
+        public Task StopAsync()
+        {
+            _cancellationTokenSource.Cancel();
+            _client.FrameReceived -= OnFrameReceived;
+            _client.RtspTrackReceived -= OnRtspTrackReceived;
+            _client.Dispose();
+            return Task.CompletedTask;
+        }
 
         private void OnFrameReceived(object state, RawFrame frame)
         { 
             
+        }
+
+        private void OnRtspTrackReceived(object state, IEnumerable<RtspTrackInfo> tracks)
+        {
+            TrackInfos = tracks;
         }
     }
 }

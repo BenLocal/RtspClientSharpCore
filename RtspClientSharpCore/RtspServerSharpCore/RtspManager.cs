@@ -42,7 +42,7 @@ namespace RtspServerSharpCore
         /// <returns></returns>
         public bool TryAddSource(RtspSource stream)
         {
-            bool result = _rtspSources.TryAdd(stream.Name, stream);
+            bool result = _rtspSources.TryAdd($"{stream.AppName}/{stream.StreamName}", stream);
             if (result)
             {
                 // 开始执行

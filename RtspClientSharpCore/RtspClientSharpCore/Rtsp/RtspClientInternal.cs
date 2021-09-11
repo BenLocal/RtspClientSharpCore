@@ -48,6 +48,7 @@ namespace RtspClientSharpCore.Rtsp
         private int _disposed;
 
         public Action<RawFrame> FrameReceived;
+        public Action<IEnumerable<RtspTrackInfo>> RtspTrackReceived;
 
         public RtspClientInternal(ConnectionParameters connectionParameters,
             Func<IRtspTransportClient> transportClientProvider = null)
@@ -84,6 +85,8 @@ namespace RtspClientSharpCore.Rtsp
 
             var parser = new SdpParser();
             IEnumerable<RtspTrackInfo> tracks = parser.Parse(describeResponse.ResponseBody);
+            
+            RtspTrackReceived?.Invoke(tracks);
 
             bool anyTrackRequested = false;
             foreach (RtspMediaTrackInfo track in GetTracksToSetup(tracks))

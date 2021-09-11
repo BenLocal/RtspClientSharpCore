@@ -18,9 +18,13 @@ namespace RtspClientSharpCore.Sdp
             public string TrackName { get; set; }
             public CodecInfo CodecInfo { get; set; }
             public int SamplesFrequency { get; set; }
+            public string TrackType { get; set; }
 
-            public PayloadFormatInfo(CodecInfo codecInfo, int samplesFrequency)
+            public List<string> SdpLines { get; } = new List<string>();  
+
+            public PayloadFormatInfo(string trackType, CodecInfo codecInfo, int samplesFrequency)
             {
+                TrackType = trackType;
                 CodecInfo = codecInfo;
                 SamplesFrequency = samplesFrequency;
             }
@@ -55,7 +59,7 @@ namespace RtspClientSharpCore.Sdp
 
             return _payloadFormatNumberToInfoMap.Values
                 .Where(fi => fi.TrackName != null && fi.CodecInfo != null)
-                .Select(fi => new RtspMediaTrackInfo(fi.TrackName, fi.CodecInfo, fi.SamplesFrequency));
+                .Select(fi => new RtspMediaTrackInfo(fi.TrackType, fi.TrackName, fi.CodecInfo, fi.SamplesFrequency, fi.SdpLines));
         }
 
         private void ParseMediaLine(string line)
@@ -69,7 +73,7 @@ namespace RtspClientSharpCore.Sdp
             }
 
             string payloadFormat = tokens[3];
-
+            string type = tokens[0];
             if (!int.TryParse(payloadFormat, out int payloadFormatNumber))
             {
                 _lastParsedFormatInfo = null;
@@ -79,12 +83,15 @@ namespace RtspClientSharpCore.Sdp
             CodecInfo codecInfo = TryCreateCodecInfo(payloadFormatNumber);
             int samplesFrequency = GetSamplesFrequencyFromPayloadType(payloadFormatNumber);
 
-            _lastParsedFormatInfo = new PayloadFormatInfo(codecInfo, samplesFrequency);
+            _lastParsedFormatInfo = new PayloadFormatInfo(type, codecInfo, samplesFrequency);
+            _lastParsedFormatInfo.SdpLines.Add(line);
             _payloadFormatNumberToInfoMap[payloadFormatNumber] = _lastParsedFormatInfo;
         }
 
         private void ParseAttributesLine(string line)
         {
+            _lastParsedFormatInfo?.SdpLines.Add(line);
+
             int equalsSignIndex = line.IndexOf('=');
 
             if (equalsSignIndex == -1)
